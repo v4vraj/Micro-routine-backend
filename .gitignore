@@ -1,0 +1,21 @@
+# --- Secrets and Config ---
+# NEVER commit your environment variables or secret keys
+*.env
+.env
+.env.*
+credentials.json
+*.pem
+
+# --- Python Virtual Environments ---
+# Ignores the entire virtual environment folder
+venv/
+.venv/
+env/
+ENV/
+
+# --- Python Cache & Compiled Files ---
+# Ignores bytecode and cache folders
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
