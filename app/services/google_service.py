@@ -6,6 +6,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import logging
 import pytz
+from fastapi import HTTPException
+from bson import ObjectId
+
+from app.database import users_collection
 
 from app.config import (
     GOOGLE_CLIENT_ID,
@@ -14,7 +18,7 @@ from app.config import (
     GOOGLE_SCOPES,
     FRONTEND_ROOT_URL,
 )
-from app.services.token_store import save_token, get_token_for_user
+from app.services.token_store import save_token, get_token
 
 
 def _make_client_config():
@@ -86,7 +90,7 @@ def make_frontend_redirect_after_success(
 
 def _build_google_calendar_service(user_id: str):
     """Create Google Calendar service using saved user tokens."""
-    token_doc = get_token_for_user(user_id, "google")
+    token_doc = get_token(user_id, "google")
     if not token_doc:
         raise Exception("Google account not connected")
 
@@ -156,7 +160,7 @@ def get_month_events(user_id: str):
 
 def _build_google_fitness_service(user_id: str):
     """Create Google Fitness service using saved user tokens."""
-    token_doc = get_token_for_user(user_id, "google")
+    token_doc = get_token(user_id, "google")
     if not token_doc:
         raise Exception("Google account not connected")
 
@@ -260,3 +264,39 @@ def get_daily_active_minutes_from_google(user_id: str) -> int:
         "intVal"
     )
     return int(minutes)
+
+def set_user_goal(user_id: str, goal_type: str, goal_value: float):
+    """
+    Generic helper to set or update a user's fitness goal.
+    goal_type → 'step_goal' | 'calorie_goal' | 'active_minute_goal'
+    """
+    try:
+        if goal_value <= 0:
+            raise HTTPException(status_code=400, detail="Goal must be a positive number")
+
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},  # ✅ convert string to ObjectId
+            {"$set": {goal_type: goal_value}}
+        )
+
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        return {
+            "message": f"{goal_type.replace('_', ' ').capitalize()} updated successfully",
+            "new_goal": goal_value,
+        }
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logging.exception(f"Error updating {goal_type}")
+        raise HTTPException(status_code=500, detail=f"Error updating {goal_type}: {e}")
+
+
+def get_user_goal(user_doc: dict, goal_type: str, default_value: float) -> float:
+    """
+    Fetch a user's saved goal with a fallback default.
+    """
+    return user_doc.get(goal_type, default_value)
+
