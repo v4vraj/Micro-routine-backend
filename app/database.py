@@ -6,3 +6,4 @@ db = client[DB_NAME]
 
 users_collection = db["users"]
 tokens_collection = db["user_tokens"]
+wellness_collection = db["wellness_scores"]
