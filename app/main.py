@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes import auth_routes, permission_routes
 from app.routes import google_calendar_route
 from app.routes.google_fitness import router as google_fitness_router
-from app.routes import jira_tasks,wellness_router
+from app.routes import jira_tasks,wellness_router,ai_agent_routes
+from app.routes import attendance_routes
 
 app = FastAPI(title="Micro Routine AI Agent")
 
@@ -21,6 +22,8 @@ app.include_router(google_calendar_route.router)
 app.include_router(google_fitness_router)
 app.include_router(jira_tasks.router)
 app.include_router(wellness_router.router)
+app.include_router(ai_agent_routes.router)
+app.include_router(attendance_routes.router)
 
 
 @app.get("/")
